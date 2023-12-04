@@ -1,0 +1,42 @@
+---
+title: "Final Project"
+author: "Matthew Roland"
+date: "2023-12-04"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+install.packages("rio")
+library(rio)
+library(tidyverse)
+```
+
+## Importing the Data
+
+```{r}
+giturl <- "https://github.com/Mattr5541/DATA_607_Final_Project/raw/main/EVS_WVS_Joint_rData_v4_0.rdata"
+
+data <- import(giturl)
+```
+
+## Preprocessing the Data
+```{r}
+#Selecting our variables of interest (go over this in case you want to add more variables or remove any more); also, I may try to integrate these changes into MongoDb, but that remains to be seen
+#Some notes: Only waves 5 & 7 are integrated into this dataset; wave 5 refers to the EVS data and wave 7 refers to the WVS data; we may need to keep this in mind when we filter data and plan our analyses
+
+##Here are the variables I chose to include: cntry_AN = abbreviated names for countries; A001 = Important in Life: Family; A002 = Important in Life: Friends; A003 = Important in Life: Leisure Time; A004 = Important in Life: Politics; A005 = Important in Life: Work; A006 = Important in Life: Religion; A008 = Feeling of happiness; A170 = Satisfaction with your life; A040 = Important child qualities: religious faith; A065 = Member: Belong to religious organization; A066 = belong to education, arts, music, or cultural activities; A068 = Belong to political parties; A165 = Most people can be trusted; B008 = Protecting environment vs. economic growth; ; D001_B = Trust your family; G007_35_B = Trust: People of another religion; Y002 = Post-Materialist Index Score; E015 = Future changes: Less importance placed on work; E035 = Income inequality; E036 = Private vs State ownership of business; E039 = Competition good or harmful; E069_01 = Confidence: Churches; E225: Democracy: Religious authorities interpret the laws; F025 = Religious denomination; F028 = How often do you attend religious services; F028B_WVS7 = How often do you pray; F066_EVS5 = Pray to God outside of religious services; F034 = Religious person; F050 = Believe in God; F051 = Believe in: life after death; F053 = Believe in: hell; F054 - Believe in: heaven; F063 - How important is God in your life; X001 - Sex; X003R - Age recoded (6 intervals); G027A - Respondent immigrant / born in country; X007 - Marital status; X011 - How many children do you have; X013 - Number of people in household; X025A_01 - Highest educational level attained; X028 - Employment status Respondent; X047_WVS7 - Scale of incomes (WVS7); X047E_EVS5 - Scale of incomes (EVS5); C002 - Jobs scarce: Employers should give priority to (nation) people than immigrants; G052 - Evaluate the impact of immigrants on the development of [your country]
+
+ews <- data %>% select(study, wave, uniqid, year, cntry_AN, A001,A002, A003, A004, A005, A006, A008, A170, A040, A065, A066, A068, A165, B008, D001_B, G007_35_B, Y002, E015, E035, E036, E039, E069_01, E225, F025, F028, F028B_WVS7, F066_EVS5, F034, F050, F051, F053, F054, F063, X001, X003R, G027A, X007, X011, X013, X025A_01, X028, X047_WVS7, X047E_EVS5, C002, G052)
+
+#Belgium, Liechtenstein, Luxembourg, Monaco, Malta, San Marino were not included in the dataset; Note: CH denotes Switzerland; HR denotes Croatia
+#Regions were defined in accordance with UN geoscheme classification (although I decided to add in Great Britain to Western Europe, following the CIA classification system, just as a matter of convenience. Let me know if there's a better way to go about this)
+ews <- ews %>% filter(cntry_AN %in% c("AT", "FR", "DE", "NL", "CH", "GB", "AL", "AD", "BA", "HR", "CY", "GR", "IT", "ME", "MK", "PT", "RS", "SI", "ES", "US"))
+
+ews <- ews %>% mutate(region = ifelse(cntry_AN %in% c("AT", "FR", "DE", "NL", "CH", "GB"), "Western Europe", "Southern Europe"))
+
+ews <- ews %>% mutate(region = if_else(cntry_AN == "US", "America", region))
+
+
+```
+
