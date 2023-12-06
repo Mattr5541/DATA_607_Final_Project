@@ -68,6 +68,29 @@ names(eurovis_raw)
 
 
 semiclean_eurovis = eurovis_raw %>%
-  select(Country, Year, Language, `Grand Final Points`) %>%
+  select(Country, Year, Language, `Grand Final Points`,`Grand Final Place`) %>%
   filter(Year >= 2017, Year <= 2022)
+
+semiclean_eurovis$`Grand Final Points`=as.numeric(unlist(semiclean_eurovis$`Grand Final Points`))
+
+semiclean_eurovis$`Grand Final Place`=as.numeric(unlist(semiclean_eurovis$`Grand Final Place`))
+
+names(semiclean_eurovis)=c("country","year","lang","pts","place")
+
+
+```
+
+## Initial Data Visualization and Exploration
+
+### Eurovision Data
+
+```{r}
+#Visualizing Countries with most Gold, Silver, and bronze medals
+
+most_gsb=semiclean_eurovis %>%
+  group_by(year) %>%
+  filter(place==1| place ==2| place == 3) %>%
+  ungroup()%>%
+  group_by(country)%>%
+  summarise(count = n_distinct(country))
 ```
