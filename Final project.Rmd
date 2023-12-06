@@ -29,7 +29,19 @@ projection <- paste0('{', paste0('"', columns, '": 1', collapse = ','), '}')
 data <- collection$find(query = '{}', fields = projection)
 ```
 
+### Importing Eurovision Dataset
+
+```{r}
+
+eurovision_id="1UUXinsHP4iDUwprM_KKEng4DBK2uC7Y1NdbnD1lmkSU"
+
+eurovis_raw=read_sheet(eurovision_id, sheet="All Songs Ever")
+
+
+```
+
 ## Preprocessing the Data
+
 ```{r}
 #Selecting our variables of interest (go over this in case you want to add more variables or remove any more); also, I may try to integrate these changes into MongoDb, but that remains to be seen
 #Some notes: Only waves 5 & 7 are integrated into this dataset; wave 5 refers to the EVS data and wave 7 refers to the WVS data; we may need to keep this in mind when we filter data and plan our analyses
@@ -49,3 +61,13 @@ ews <- ews %>% mutate(region = if_else(cntry_AN == "US", "America", region))
 
 ```
 
+### Preprocessing Eurovision Data
+
+```{r}
+names(eurovis_raw)
+
+
+semiclean_eurovis = eurovis_raw %>%
+  select(Country, Year, Language, `Grand Final Points`) %>%
+  filter(Year >= 2017, Year <= 2022)
+```
