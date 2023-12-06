@@ -11,6 +11,7 @@ library(rio)
 library(tidyverse)
 library(mongolite)
 library(googlesheets4)
+library(flextable)
 ```
 
 ## Importing the Data
@@ -92,5 +93,126 @@ most_gsb=semiclean_eurovis %>%
   filter(place==1| place ==2| place == 3) %>%
   ungroup()%>%
   group_by(country)%>%
-  summarise(count = n_distinct(country))
+  summarise(count = n()) %>%
+  arrange(desc(count))
+
+ft_gsb1= flextable(most_gsb)
+
+ft_gsb2 = ft_gsb1 |> 
+  set_header_labels(country = "Nation", count = "Number of Eurovision Medals")  |>
+  add_header_row(values = "Table of Eurovison Medals by Country 2017-2022", colwidths = 2) 
+
+ft_gsb2
+  
 ```
+```{r}
+#Visualizing Language Distributions
+
+eurovis_langs= semiclean_eurovis %>%
+  group_by(lang) %>%
+  mutate(first_lang=sapply(strsplit(lang, ", "), `[`, 1)) %>%
+  ungroup()%>%
+  group_by(first_lang) %>%
+  summarise(count=n()) %>%
+  arrange(desc(count))
+
+total_songs=eurovis_langs %>%
+  summarise(result=sum(count))
+
+langs=flextable(eurovis_langs)|> 
+  set_header_labels(first_lang = "Song Performed First Language", count = "Number")  |>
+  add_header_row(values = "Table of Eurovison Song First Language", colwidths = 2)
+
+langs
+
+eurolang_hist=ggplot(eurovis_langs, aes(x = first_lang, y = count)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  theme_minimal() +
+  labs(x = "Language", y = "Count", title = "Histogram of Eurovision Song First Language 2017-2022") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+eurolang_hist
+
+```
+
+```{r}
+#Determining Winning Languages pts
+
+lang_pts=semiclean_eurovis %>%
+  group_by(year) %>%
+  filter(place==1| place ==2| place == 3) %>%
+  ungroup()%>%
+  group_by(lang) %>%
+  mutate(first_lang=sapply(strsplit(lang, ", "), `[`, 1)) %>%
+  ungroup()%>%
+  group_by(first_lang) %>%
+  summarise(agg_pts=sum(pts, na.rm= TRUE))
+
+lang_pt_tbl=flextable(lang_pts)|> 
+  set_header_labels(first_lang = "Song Performed First Language", agg_pts = "Aggregated Points")  |>
+  add_header_row(values = "Table of Eurovision 1st, 2nd, or 3rd Place Points by Language 2017-2022", colwidths = 2)
+
+lang_pt_tbl
+
+
+lang_pts_hist=ggplot(lang_pts, aes(x = first_lang, y = agg_pts)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  theme_minimal() +
+  labs(x = "Language", y = "Aggregated Points", title = "Histogram of Eurovision 1st, 2nd, or 3rd Place Points by Language 2017-2022") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+lang_pts_hist
+
+
+```
+
+
+```{r}
+#Visualizing time distribution of Languages
+lang_time=semiclean_eurovis %>%
+  group_by(year) %>%
+  filter(place==1| place ==2| place == 3) %>%
+  ungroup()%>%
+  group_by(lang) %>%
+  mutate(first_lang=sapply(strsplit(lang, ", "), `[`, 1)) %>%
+  ungroup()%>%
+  group_by(year, first_lang) %>%
+  summarise(count = n(), .groups = 'drop') %>%
+  arrange(year, desc(count))
+
+
+lang_time_tbl=flextable(lang_time)|> 
+  set_header_labels(year="Year", first_lang = "Song Performed First Language", count = "Count")  |>
+  add_header_row(values = "Table of Eurovision 1st, 2nd, or 3rd Place Points by Language and Year 2017-2022", colwidths = 3)
+
+lang_time_tbl
+
+```
+
+
+
+
+
+```{r}
+#Visualizing Point Distributions by Country
+eurovis_pts= semiclean_eurovis %>%
+  group_by(country) %>%
+  summarise(agg_pts=sum(pts, na.rm= TRUE)) %>%
+  arrange(desc(agg_pts))
+
+
+pts_tab=flextable(eurovis_pts)|> 
+  set_header_labels(country = "Country", agg_pts = "Aggregated Eurovision Points")  |>
+  add_header_row(values = "Table of Aggregated Eurovison Points by Country 2017-2022", colwidths = 2)
+
+pts_tab
+
+europts_hist=ggplot(eurovis_pts, aes(x = country, y = agg_pts)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  theme_minimal() +
+  labs(x = "Country", y = "Total Points", title = "Histogram of Aggregated Eurovision Points by Country 2017-2022") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+europts_hist
+```
+
