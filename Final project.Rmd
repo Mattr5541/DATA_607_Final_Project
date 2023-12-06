@@ -59,7 +59,16 @@ ews <- ews %>% mutate(region = ifelse(cntry_AN %in% c("AT", "FR", "DE", "NL", "C
 
 ews <- ews %>% mutate(region = if_else(cntry_AN == "US", "America", region))
 
+##And now I can clean the data
+#First, I'll start by removing all values that denote a participant's uncertainty or refusal to answer question items; Items coded -1 -- -5 are considered missing, or instances in which the participant did not answer; -4 represents instances in which the question was not included in the survey (i.e., the question was included in the EVS survey, but not the EWS survey. As a result, I will keep it in for now, since its removal will lead to too much systematic data loss; we can handle those situations by simply excluding wave 5 or 7 from certain analyses/graphs)
+ews <- ews %>% mutate_all(~ ifelse(. %in% c(-1, -2, -3, -5), NA, .))
+ews <- drop_na(ews)
+```
 
+## Creating a Modified Dataset Representing Mean Values by Country
+
+```{r}
+ews_group <- ews %>% group_by(cntry_AN) %>% summarize(Family = mean(A001), Friends = mean(A002), Leisure = mean(A003), Politics = mean(A004), Work = mean(A005), Religion = mean(A006), Happiness = mean(A008), Satisfaction = mean(A170), Religious_Children = mean(A040), Organized_Religion = mean(A065), Cultural_Activities = mean(A066), Political_Party_Affiliation = mean(A068), Trust_People = mean(A165), Protect_Environment_vs_Economy = mean(B008), Trust_Family = mean(D001_B), Trust_Religion = mean(G007_35_B), Materialism = mean(Y002), Future_Change_Less_Work = mean(E015), Income_Inequality = mean(E035), Business_Ownership = mean(E036), Competition = mean(E039), Confidence_Church = mean(E069_01), Democracy_Religion = mean(E225), Deonomnation = mean(F025), Religious_Service_Attendance = mean(F025), Pray = mean(F028B_WVS7), Pray_Outside_Service = mean(F066_EVS5), Religious = mean(F034), Belivie_in_God = mean(F050), Belive_in_Afterlife = mean(F051), Belive_in_Hell = mean(F053), Believe_in_Heaven = mean(F054), Job_Priority_to_Immigrants = mean(C002), Impact_of_Immigration = mean(G052))
 ```
 
 ### Preprocessing Eurovision Data
