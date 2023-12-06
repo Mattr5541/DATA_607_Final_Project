@@ -74,7 +74,7 @@ ews_group <- ews %>% group_by(cntry_AN) %>% summarize(Family = mean(A001), Frien
 ### Preprocessing Eurovision Data
 
 ```{r}
-names(eurovis_raw)
+#names(eurovis_raw)
 
 
 semiclean_eurovis = eurovis_raw %>%
@@ -87,6 +87,28 @@ semiclean_eurovis$`Grand Final Place`=as.numeric(unlist(semiclean_eurovis$`Grand
 
 names(semiclean_eurovis)=c("country","year","lang","pts","place")
 
+
+#unique(semiclean_eurovis$lang)
+
+sce1=semiclean_eurovis %>%
+  mutate(first_lang=strsplit(lang, split=',')) %>%
+  unnest(first_lang) %>%
+  select(country, year, first_lang, pts,  place)
+
+
+#turning Lang into Factor
+
+clean_eurovis=sce1 %>%
+  filter(complete.cases(.)) %>%
+  mutate(language_category = fct_collapse(first_lang,
+                                              Latin_based = c("Portuguese", "Italian", "French", " French","Spanish"," Italian"),
+                                              Germanic = c("English", "Icelandic"," Srnán Tongo"," English"),
+                                              Slavic=c("Russian","Serbian", "Belarusian","Ukrainian","Slovene"),
+                                              Finno_ugric=c("Hungarian","Northern Sami"," Northern Sami"),
+                                              Other = c("Albanian")))
+
+clean_eurovis=clean_eurovis %>%
+  select(country, year, language_category, pts, place)
 
 ```
 
