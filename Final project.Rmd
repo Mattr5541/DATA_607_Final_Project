@@ -1,5 +1,5 @@
 ---
-title: "Final Project"
+title: "Data 607 Final Project"
 author: "Matthew Roland, Jean Jimenez, Kelly Eng"
 date: "2023-12-04"
 output: pdf_document
@@ -13,6 +13,8 @@ library(mongolite)
 library(googlesheets4)
 library(flextable)
 ```
+
+# Clustering of
 
 ## Importing the Data
 
@@ -65,12 +67,6 @@ ews <- ews %>% mutate_all(~ ifelse(. %in% c(-1, -2, -3, -5), NA, .))
 ews <- drop_na(ews)
 ```
 
-## Creating a Modified Dataset Representing Mean Values by Country
-
-```{r}
-ews_group <- ews %>% group_by(cntry_AN) %>% summarize(Family = mean(A001), Friends = mean(A002), Leisure = mean(A003), Politics = mean(A004), Work = mean(A005), Religion = mean(A006), Happiness = mean(A008), Satisfaction = mean(A170), Religious_Children = mean(A040), Organized_Religion = mean(A065), Cultural_Activities = mean(A066), Political_Party_Affiliation = mean(A068), Trust_People = mean(A165), Protect_Environment_vs_Economy = mean(B008), Trust_Family = mean(D001_B), Trust_Religion = mean(G007_35_B), Materialism = mean(Y002), Future_Change_Less_Work = mean(E015), Income_Inequality = mean(E035), Business_Ownership = mean(E036), Competition = mean(E039), Confidence_Church = mean(E069_01), Democracy_Religion = mean(E225), Deonomnation = mean(F025), Religious_Service_Attendance = mean(F025), Pray = mean(F028B_WVS7), Pray_Outside_Service = mean(F066_EVS5), Religious = mean(F034), Belivie_in_God = mean(F050), Belive_in_Afterlife = mean(F051), Belive_in_Hell = mean(F053), Believe_in_Heaven = mean(F054), Job_Priority_to_Immigrants = mean(C002), Impact_of_Immigration = mean(G052))
-```
-
 ### Preprocessing Eurovision Data
 
 ```{r}
@@ -100,12 +96,12 @@ sce1=semiclean_eurovis %>%
 
 clean_eurovis=sce1 %>%
   filter(complete.cases(.)) %>%
-  mutate(language_category = fct_collapse(first_lang,
-                                              Latin_based = c("Portuguese", "Italian", "French", " French","Spanish"," Italian"),
-                                              Germanic = c("English", "Icelandic"," Srnán Tongo"," English"),
-                                              Slavic=c("Russian","Serbian", "Belarusian","Ukrainian","Slovene"),
-                                              Finno_ugric=c("Hungarian","Northern Sami"," Northern Sami"),
-                                              Other = c("Albanian")))
+  mutate(language_category = case_when(
+    first_lang %in%  c("Portuguese", "Italian", "French", " French","Spanish"," Italian") ~1,
+    first_lang %in% c("English", "Icelandic"," Srnán Tongo"," English") ~2,
+   first_lang %in%  c("Russian","Serbian", "Belarusian","Ukrainian","Slovene") ~3,
+   first_lang %in%  c("Hungarian","Northern Sami"," Northern Sami") ~ 4,
+    first_lang == "Albanian" ~ 5))
 
 clean_eurovis=clean_eurovis %>%
   select(country, year, language_category, pts, place)
@@ -136,6 +132,7 @@ ft_gsb2 = ft_gsb1 |>
 ft_gsb2
   
 ```
+
 ```{r}
 #Visualizing Language Distributions
 
@@ -197,7 +194,6 @@ lang_pts_hist
 
 ```
 
-
 ```{r}
 #Visualizing time distribution of Languages
 lang_time=semiclean_eurovis %>%
@@ -219,10 +215,6 @@ lang_time_tbl=flextable(lang_time)|>
 lang_time_tbl
 
 ```
-
-
-
-
 
 ```{r}
 #Visualizing Point Distributions by Country
@@ -247,3 +239,81 @@ europts_hist=ggplot(eurovis_pts, aes(x = country, y = agg_pts)) +
 europts_hist
 ```
 
+## Data Processing
+
+### Creating a Modified Data set Representing Mean Values by Country
+
+```{r}
+#ews_group <- ews %>% group_by(year,cntry_AN ) %>% summarize(Family = mean(A001#), Friends = mean(A002), Leisure = mean(A003), Politics = mean(A004), Work = #mean(A005), Religion = mean(A006), Happiness = mean(A008), Satisfaction = #mean#(A170), Religious_Children = mean(A040), Organized_Religion = mean(A065), #Cultural_Activities = mean(A066), Political_Party_Affiliation = mean(A068), #Trust_People = mean(A165), Protect_Environment_vs_Economy = mean(B008), #Trust_Family = mean(D001_B), Trust_Religion = mean(G007_35_B), Materialism = #mean(Y002), Future_Change_Less_Work = mean(E015), Income_Inequality = mean#(E035), Business_Ownership = mean(E036), Competition = mean(E039), #Confidence_Church = mean(E069_01), Democracy_Religion = mean(E225), #Deonomnation = mean(F025), Religious_Service_Attendance = mean(F025), Pray = #mean(F028B_WVS7), Pray_Outside_Service = mean(F066_EVS5), Religious = mean#(F034), Belivie_in_God = mean(F050), Belive_in_Afterlife = mean(F051), #Belive_in_Hell = mean(F053), Believe_in_Heaven = mean(F054), #Job_Priority_to_Immigrants = mean(C002), Impact_of_Immigration = mean(G052))
+
+
+
+
+
+ews_group <- ews  %>% mutate(Family =A001, Friends = A002, Leisure = A003, Politics = A004, Work = A005, Religion = A006, Happiness = A008, Satisfaction = A170, Religious_Children = A040, Organized_Religion = A065, Cultural_Activities =A066, Political_Party_Affiliation = A068, Trust_People = A165, Protect_Environment_vs_Economy = B008, Trust_Family = D001_B, Trust_Religion = G007_35_B, Materialism = Y002, Future_Change_Less_Work =E015, Income_Inequality = E035, Business_Ownership = E036, Competition = E039, Confidence_Church = E069_01, Democracy_Religion = E225, Deonomnation = F025, Religious_Service_Attendance = F025, Pray = F028B_WVS7, Pray_Outside_Service = F066_EVS5, Religious = F034, Belivie_in_God = F050, Belive_in_Afterlife = F051, Belive_in_Hell = F053, Believe_in_Heaven = F054, Job_Priority_to_Immigrants = C002, Impact_of_Immigration = G052) %>%
+   select(cntry_AN, year, Family , Friends , Leisure, Politics , Work, Religion , Happiness , Satisfaction , Religious_Children , Organized_Religion , Cultural_Activities , Political_Party_Affiliation , Trust_People , Protect_Environment_vs_Economy, Trust_Family , Trust_Religion , Materialism , Future_Change_Less_Work , Income_Inequality , Business_Ownership , Competition , Confidence_Church, Democracy_Religion , Deonomnation, Religious_Service_Attendance , Pray , Pray_Outside_Service, Religious , Belivie_in_God , Belive_in_Afterlife , Belive_in_Hell, Believe_in_Heaven, Job_Priority_to_Immigrants , Impact_of_Immigration )
+```
+
+### Adding Country Code to Eurovision Dataset
+
+```{r}
+
+country_key=read.csv(url("https://gist.githubusercontent.com/tadast/8827699/raw/f5cac3d42d16b78348610fc4ec301e9234f82821/countries_codes_and_coordinates.csv"))
+
+country_key=country_key %>%
+  select(Country, Alpha.2.code)
+
+names(country_key)=c("country","cntry_AN")
+
+eurovis_w_cc=clean_eurovis %>%
+  right_join(country_key, by="country")
+
+
+```
+
+### Merging Eurovision Data and Survey Data
+
+```{r}
+
+
+# Checking column names and types in ews_group
+print(names(ews_group))
+str(ews_group)
+
+# Checking column names and types in eurovis_w_cc
+print(names(eurovis_w_cc))
+str(eurovis_w_cc)
+
+ews_group$year = as.integer(ews_group$year)
+eurovis_w_cc$year = as.integer(eurovis_w_cc$year)
+
+
+# Trim leading and trailing spaces in cntry_AN of eurovis_w_cc
+eurovis_w_cc$cntry_AN <- trimws(eurovis_w_cc$cntry_AN)
+
+
+joint_data = inner_join(ews_group, eurovis_w_cc, by = c("cntry_AN", "year"))
+
+
+
+joint_data$language_category=as.integer(joint_data$language_category)
+
+
+joint_data=joint_data%>%
+  ungroup()%>%
+  filter(complete.cases(.)) %>%
+  select(-cntry_AN)
+```
+
+### Standardization
+
+Doing
+
+$$
+X_{\text{standardized}} = \frac{X - \mu}{\sigma}
+$$
+
+```{r}
+stand_jointdf = joint_data %>%
+  mutate(across(-c(year, country), ~ (scale(.))))
+```
