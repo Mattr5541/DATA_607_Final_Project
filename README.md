@@ -7,4 +7,6 @@ EVS/WVS (2022). European Values Study and World Values Survey: Joint EVS/WVS 201
 
 https://search.gesis.org/research_data/ZA7505
 https://europeanvaluesstudy.eu/methodology-data-documentation/survey-2017/joint-evs-wvs/data-and-documentation-joint-evs-wvs/
-  
+
+
+[Eurovision Dataset](https://docs.google.com/spreadsheets/d/1UUXinsHP4iDUwprM_KKEng4DBK2uC7Y1NdbnD1lmkSU/edit#gid=0)
