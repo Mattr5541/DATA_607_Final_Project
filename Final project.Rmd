@@ -12,6 +12,8 @@ library(tidyverse)
 library(mongolite)
 library(googlesheets4)
 library(flextable)
+library(cluster)
+library(factoextra)
 ```
 
 # Clustering of
@@ -35,12 +37,13 @@ data <- collection$find(query = '{}', fields = projection)
 ### Importing Eurovision Dataset
 
 ```{r}
+##Google Drive Attmept
+#eurovision_id="1jRFrSEQaLmYSFLujaaEMEE33rNUo0UMOlLGXngqaYLQ"
+#eurovis_raw=read_sheet(eurovision_id, sheet="All Songs Ever")
 
-eurovision_id="1UUXinsHP4iDUwprM_KKEng4DBK2uC7Y1NdbnD1lmkSU"
 
-eurovis_raw=read_sheet(eurovision_id, sheet="All Songs Ever")
-
-
+eurogit <- "https://raw.githubusercontent.com/Mattr5541/DATA_607_Final_Project/main/Copy_of_Every_Eurovision_Result_Ever%20-%20All%20Songs%20Ever.csv"
+eurovis_raw <- import(eurogit)
 ```
 
 ## Preprocessing the Data
@@ -303,6 +306,12 @@ joint_data=joint_data%>%
   ungroup()%>%
   filter(complete.cases(.)) %>%
   select(-cntry_AN)
+
+#Alright, so character variables do not work with k-means clustering, so I have two options: 1) exclude country from the analysis entirely; 2) find the means for each country so that way, each instance of country is unique and can be used as an identifier (I think year will need to be excluded entirely)
+
+joint_data_mean <- joint_data %>% group_by(country) %>% summarize(Family = mean(Family), Friends = mean(Friends), Leisure = mean(Leisure), Politics = mean(Politics), Work = mean(Work), Religion = mean(Religion), Happiness = mean(Happiness), Satisfaction = mean(Satisfaction), Religious_Children = mean(Religious_Children), Organized_Religion = mean(Organized_Religion), Cultural_Activities = mean(Cultural_Activities), Political_Party_Affiliation = mean(Political_Party_Affiliation), Trust_People = mean(Trust_People), Protect_Environment_vs_Economy = mean(Protect_Environment_vs_Economy), Trust_Family = mean(Trust_Family), Trust_Religion = mean(Trust_Religion), Materialism = mean(Materialism), Future_Change_Less_Work = mean(Future_Change_Less_Work), Income_Inequality = mean(Income_Inequality), Business_Ownership = mean(Business_Ownership), Competition = mean(Competition), Confidence_Church = mean(Confidence_Church), Democracy_Religion = mean(Democracy_Religion), Deonomnation = mean(Deonomnation), Religious_Service_Attendance = mean(Religious_Service_Attendance), Pray = mean(Pray), Pray_Outside_Service = mean(Pray_Outside_Service), Religious = mean(Religious), Belivie_in_God = mean(Belivie_in_God), Belive_in_Afterlife = mean(Belive_in_Afterlife), Belive_in_Hell = mean(Belive_in_Hell), Believe_in_Heaven = mean(Believe_in_Heaven), Job_Priority_to_Immigrants = mean(Job_Priority_to_Immigrants), Impact_of_Immigration = mean(Impact_of_Immigration), language_category = mean(language_category), pts = mean(pts), place = mean(place))
+
+joint_data_mean <- joint_data_mean %>% column_to_rownames(var = "country")
 ```
 
 ### Standardization
@@ -314,6 +323,58 @@ X_{\text{standardized}} = \frac{X - \mu}{\sigma}
 $$
 
 ```{r}
-stand_jointdf = joint_data %>%
-  mutate(across(-c(year, country), ~ (scale(.))))
+#stand_jointdf = joint_data %>%
+  #mutate(across(-c(year, country), ~ (scale(.))))
+
+stand_jointdf = joint_data_mean %>% scale()
 ```
+
+### Performing K-Means Clustering on the Standardized Dataset
+
+```{r}
+
+#stand_jointdf_mod <- stand_jointdf %>% select(-c(country))
+
+#stand_jointdf_mod <- stand_jointdf
+  
+k_means_results <- kmeans(stand_jointdf, centers = 2, nstart = 25)
+str(k_means_results)
+print(k_means_results$centers)  # Cluster centroids
+print(k_means_results$size)     # Size of each cluster
+
+#Now I will use a function to calculate the optimal k value for this analysis
+set.seed(123)
+wss <- function(k) {
+  kmeans(stand_jointdf, k, nstart = 25)$tot.withinss
+}
+
+k_values <- 1:10
+
+wss_values <- map_dbl(k_values, wss)
+
+plot(k_values, wss_values,
+       type="b", pch = 19, frame = FALSE, 
+       xlab="Number of clusters K",
+       ylab="Total within-clusters sum of squares")
+
+## Based on the "bend" in the graph, 4 may be a more optimal choice for our k
+
+final <- kmeans(stand_jointdf, centers = 4, nstart = 25)
+print(final)
+
+fviz_cluster(final, data = stand_jointdf)
+```
+With that, we are left with four clusters, wherein cluster 1 contains observations for Albania; cluster 2 contains observations for Croatia and Italy; cluster 3 contains observations for Serbia, Cyprus, and Greece; Cluster 4 contains observations for Austria, Germany, the Netherlands, Spain, France, and the United Kingdom 
+```{r}
+joint_data_cluster <- joint_data_mean %>% mutate(Cluster = final$cluster) %>% group_by(Cluster) %>% summarize(pts = mean(pts), place = mean(place))
+
+flextable(joint_data_cluster)
+
+joint_data_cluster %>% ggplot(aes(Cluster, pts)) + geom_bar(stat = "identity", fill = "blue") + ggtitle("Mean Points Earned by Cluster") + ylab("Points")
+
+```
+Based on this descriptive cluster analysis, it would seem that countries in the second cluster (Croatia and Italy) are more likely to score the highest number of points, and thus, place higher
+
+### Resources
+
+https://uc-r.github.io/kmeans_clustering#:~:text=clustering%20algorithms%20%26%20visualization-,Data%20Preparation,scaled)%20to%20make%20variables%20comparable.
