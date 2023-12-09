@@ -12,6 +12,8 @@ library(tidyverse)
 library(mongolite)
 library(googlesheets4)
 library(flextable)
+library(corrplot)
+library(stats)
 ```
 
 # Clustering of
@@ -36,10 +38,13 @@ data <- collection$find(query = '{}', fields = projection)
 
 ```{r}
 
-eurovision_id="1UUXinsHP4iDUwprM_KKEng4DBK2uC7Y1NdbnD1lmkSU"
+##Google Drive Attmept
+#eurovision_id="1jRFrSEQaLmYSFLujaaEMEE33rNUo0UMOlLGXngqaYLQ"
+#eurovis_raw=read_sheet(eurovision_id, sheet="All Songs Ever")
 
-eurovis_raw=read_sheet(eurovision_id, sheet="All Songs Ever")
 
+eurogit <- "https://raw.githubusercontent.com/Mattr5541/DATA_607_Final_Project/main/Copy_of_Every_Eurovision_Result_Ever%20-%20All%20Songs%20Ever.csv"
+eurovis_raw <- import(eurogit)
 
 ```
 
@@ -109,6 +114,56 @@ clean_eurovis=clean_eurovis %>%
 ```
 
 ## Initial Data Visualization and Exploration
+
+### European Values Visualizations
+
+Germany is the only country that shows up twice for 2 years for Western Europe, other countries only show up once for a year
+Serbia is the same case as Germany, but for Southern Europe
+How important God is in people's lives for these two countries increased
+
+```{r}
+ews |>
+  filter(cntry_AN %in% c("DE", "RS")) |>
+  group_by(year, cntry_AN) |>
+  mutate(mean = mean(F063), country = ifelse(cntry_AN == "DE", "Germany", "Serbia")) |>
+  ggplot(aes(year, mean, col=country, label = country)) +
+  geom_textpath() +
+  labs(title = "Belief in God", x = "Year", y = "Importance of God (Mean)")
+```
+
+America only shows up for the year 2017, but by comparison, happiness levels is lower than both Southern & Western Europe
+```{r}
+ews |>
+  ggplot(aes(x=A008, col=region)) + 
+  geom_histogram() +
+  labs(title="Happiness by Region", x="Important in Life: Family") +
+  facet_grid(year~region)
+
+#X025A_01
+```
+
+Interquartile on Views on Income
+All 3 regions have the same median and first quartile, but it seems in Europe for the third quartile, income differences should be larger.
+
+```{r}
+ews |>
+  ggplot(aes(region, E035)) +
+  geom_boxplot() +
+  labs(title = "Views on Income Equality", x = "Region", y = "Thought on Income Difference", caption="On a scale of 1 to 10, 1 means more equal and 10 means income differences need to be larger")
+```
+For immigrants, the Americans seems mostly satisfied regardless of education levels while in Europe it's more varied.
+
+```{r}
+ews |>
+  filter(G027A == 2) |>
+  group_by(year, cntry_AN) |>
+  mutate(satisfaction = mean(A170)) |>
+  ggplot(aes(X025A_01, satisfaction, color=cntry_AN)) +
+  geom_point() +
+  facet_grid(year~region) +
+  labs(x = "Education Level", y = "Satisfaction with Life", title = "Immigrants Satisfaction")
+```
+
 
 ### Eurovision Data
 
@@ -316,4 +371,101 @@ $$
 ```{r}
 stand_jointdf = joint_data %>%
   mutate(across(-c(year, country), ~ (scale(.))))
+```
+
+### Exploratory Data Analysis
+
+```{r}
+# Custom function to get summary statistics
+summary_stats <- function(x) {
+  qs <- quantile(x, c(0.25, 0.5, 0.75))
+  data.frame(
+    sample_size = length(x),
+    mean = mean(x),
+    sd = sd(x),
+    variance = var(x),
+    minimum = min(x),
+    maximum = max(x),
+    interquartile_range = qs[3] - qs[1]
+  )
+}
+
+friends_res <- joint_data |>
+  group_by(country) |>
+  summarize(across(Friends, summary_stats)) |>
+  as_tibble()
+
+leisure_res <- joint_data |>
+  group_by(country) |>
+  summarize(across(Leisure, summary_stats)) |>
+  as_tibble()
+
+work_res <- joint_data |>
+  group_by(country) |>
+  summarize(across(Work, summary_stats)) |>
+  as_tibble()
+
+religion_res <- joint_data |>
+  group_by(country) |>
+  summarize(across(Religion, summary_stats)) |>
+  as_tibble()
+
+print.data.frame(religion_res)
+print.data.frame(work_res)
+print.data.frame(friends_res)
+print.data.frame(leisure_res)
+
+# Dependent Variables
+
+# Points by Country
+joint_data |>
+  distinct(country, pts, .keep_all = TRUE) |>
+  ggplot(aes(country, pts)) +
+  geom_col()
+
+# Placement in Eurovision by Country
+joint_data |>
+  distinct(country, place, .keep_all = TRUE) |>
+  ggplot(aes(country, place)) +
+  geom_col()
+
+joint_data |>
+  distinct(country, place, pts, .keep_all = TRUE) |>
+  ggplot(aes(x = place, y = pts, color = country)) +
+  geom_point() +
+  labs(x = "Place", y = "Points", title = "Points and Placement")
+
+numeric_columns <- sapply(joint_data, is.numeric)
+cor_matrix <- cor(joint_data[, numeric_columns])
+
+# The results are very messy and numbers don't fit properly that's why the below lines are commented out
+# corrplot(cor_matrix, method="number")
+# corrplot(cor_matrix, method="color")
+
+pca_result <- princomp(cor_matrix, cor=TRUE)
+summary(pca_result)
+transformed_scores <- pca_result$scores[, 1:35]
+print(transformed_scores)
+
+
+# Don't want the column to be correlated with itself for obvious reasons
+diag(cor_matrix) <- NA
+
+# Flatten the upper triangle of the correlation matrix (excluding diagonal)
+upper_triangle <- cor_matrix[upper.tri(cor_matrix, diag = FALSE)]
+
+# Find the indices of the top 10 correlations
+top_indices <- order(upper_triangle, decreasing = TRUE)[1:10]
+
+# Extract the top 10 most strongly correlated pairs
+top_correlated_pairs <- data.frame(
+  variable1 = rownames(cor_matrix)[row(cor_matrix)[upper.tri(cor_matrix, diag = FALSE)][top_indices]],
+  variable2 = colnames(cor_matrix)[col(cor_matrix)[upper.tri(cor_matrix, diag = FALSE)][top_indices]],
+  correlation = upper_triangle[top_indices]
+)
+
+# Denomination & Religious_Service_Attendance have perfect correlation
+# Belive_in_Hell & Believe_in_Heaven have the second strongest correlation at 0.7733818
+
+print(top_correlated_pairs)
 ```
