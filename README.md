@@ -5,7 +5,9 @@
 by Team Android:
 
 [Kelly Eng](https://github.com/autistic96)
+
 [Jean Jimenez](https://github.com/sleepysloth12)
+
 [Matthew Roland](https://github.com/Mattr5541)
 
 
