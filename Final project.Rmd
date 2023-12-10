@@ -14,6 +14,7 @@ library(googlesheets4)
 library(flextable)
 library(corrplot)
 library(stats)
+library(ggplot2)
 ```
 
 # Clustering of
@@ -60,15 +61,15 @@ ews <- data[, !names(data) %in% "_id"]
 
 #Belgium, Liechtenstein, Luxembourg, Monaco, Malta, San Marino were not included in the dataset; Note: CH denotes Switzerland; HR denotes Croatia
 #Regions were defined in accordance with UN geoscheme classification (although I decided to add in Great Britain to Western Europe, following the CIA classification system, just as a matter of convenience. Let me know if there's a better way to go about this)
-ews <- ews %>% filter(cntry_AN %in% c("AT", "FR", "DE", "NL", "CH", "GB", "AL", "AD", "BA", "HR", "CY", "GR", "IT", "ME", "MK", "PT", "RS", "SI", "ES", "US"))
+ews <- ews %>% dplyr::filter(cntry_AN %in% c("AT", "FR", "DE", "NL", "CH", "GB", "AL", "AD", "BA", "HR", "CY", "GR", "IT", "ME", "MK", "PT", "RS", "SI", "ES", "US"))
 
-ews <- ews %>% mutate(region = ifelse(cntry_AN %in% c("AT", "FR", "DE", "NL", "CH", "GB"), "Western Europe", "Southern Europe"))
+ews <- ews %>% dplyr::mutate(region = ifelse(cntry_AN %in% c("AT", "FR", "DE", "NL", "CH", "GB"), "Western Europe", "Southern Europe"))
 
-ews <- ews %>% mutate(region = if_else(cntry_AN == "US", "America", region))
+ews <- ews %>% dplyr::mutate(region = dplyr::if_else(cntry_AN == "US", "America", region))
 
 ##And now I can clean the data
 #First, I'll start by removing all values that denote a participant's uncertainty or refusal to answer question items; Items coded -1 -- -5 are considered missing, or instances in which the participant did not answer; -4 represents instances in which the question was not included in the survey (i.e., the question was included in the EVS survey, but not the EWS survey. As a result, I will keep it in for now, since its removal will lead to too much systematic data loss; we can handle those situations by simply excluding wave 5 or 7 from certain analyses/graphs)
-ews <- ews %>% mutate_all(~ ifelse(. %in% c(-1, -2, -3, -5), NA, .))
+ews <- ews %>% dplyr::mutate_all(~ ifelse(. %in% c(-1, -2, -3, -5), NA, .))
 ews <- drop_na(ews)
 ```
 
@@ -117,11 +118,11 @@ clean_eurovis=clean_eurovis %>%
 
 ### European Values Visualizations
 
-Germany is the only country that shows up twice for 2 years for Western Europe, other countries only show up once for a year
-Serbia is the same case as Germany, but for Southern Europe
-How important God is in people's lives for these two countries increased
+Germany is the only country that shows up twice for 2 years for Western Europe, other countries only show up once for a year Serbia is the same case as Germany, but for Southern Europe How important God is in people's lives for these two countries increased
 
 ```{r}
+library(geomtextpath)
+
 ews |>
   filter(cntry_AN %in% c("DE", "RS")) |>
   group_by(year, cntry_AN) |>
@@ -132,7 +133,9 @@ ews |>
 ```
 
 America only shows up for the year 2017, but by comparison, happiness levels is lower than both Southern & Western Europe
+
 ```{r}
+
 ews |>
   ggplot(aes(x=A008, col=region)) + 
   geom_histogram() +
@@ -142,8 +145,7 @@ ews |>
 #X025A_01
 ```
 
-Interquartile on Views on Income
-All 3 regions have the same median and first quartile, but it seems in Europe for the third quartile, income differences should be larger.
+Interquartile on Views on Income All 3 regions have the same median and first quartile, but it seems in Europe for the third quartile, income differences should be larger.
 
 ```{r}
 ews |>
@@ -151,6 +153,7 @@ ews |>
   geom_boxplot() +
   labs(title = "Views on Income Equality", x = "Region", y = "Thought on Income Difference", caption="On a scale of 1 to 10, 1 means more equal and 10 means income differences need to be larger")
 ```
+
 For immigrants, the Americans seems mostly satisfied regardless of education levels while in Europe it's more varied.
 
 ```{r}
@@ -163,7 +166,6 @@ ews |>
   facet_grid(year~region) +
   labs(x = "Education Level", y = "Satisfaction with Life", title = "Immigrants Satisfaction")
 ```
-
 
 ### Eurovision Data
 
