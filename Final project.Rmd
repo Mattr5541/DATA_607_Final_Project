@@ -22,6 +22,10 @@ library(ggplot2)
 
 # Clustering of
 
+## Introduction
+
+In this project, we explore the interesting association between European social values and Eurovision contest outcomes. By using skills learned in the semester, our focus is to cluster and visualize European survey data alongside Eurovision contest results. This approach aims to uncover potential correlations and insights into how cultural and social attitudes across various European regions might influence or reflect in the performances and results of the widely celebrated Eurovision Song Contest. By integrating and analyzing these diverse datasets, we seek to offer a unique perspective on the cultural dynamics of Europe as expressed through popular media and societal beliefs.
+
 ## Importing the Data
 
 We stored the European survey data on MongoDB because it was too large. A MongoDB database was constructed and data was imported to it. Afterwards, a connection was established to a MongoDB server, specifying the database and collection to be accessed.
@@ -47,7 +51,6 @@ data <- collection$find(query = '{}', fields = projection)
 ### Importing Eurovision Dataset
 
 We imported the eurovision datasets two ways. Originally, the data was intended to be imported from a Google Sheet using the `read_sheet` function. This approach would have allowed for a direct import of data from a Google Sheet specified by its ID, likely making use of a package like `googlesheets4` in R, which facilitates such operations. The specific sheet titled "All Songs Ever" from the Eurovision dataset was targeted.
-
 
 However, due to difficulties in accessing the Google Sheet among the group group, an alternative method was adopted. The data was instead placed on GitHub.
 
@@ -428,7 +431,6 @@ joint_data_mean <- joint_data %>% group_by(country) %>% summarize(Family = mean(
 joint_data_mean <- joint_data_mean %>% column_to_rownames(var = "country")
 ```
 
-
 ## Exploratory Data Analysis
 
 ```{r}
@@ -526,11 +528,6 @@ top_correlated_pairs <- data.frame(
 print(top_correlated_pairs)
 ```
 
-
-
-
-
-
 ### Standardization
 
 Doing
@@ -545,9 +542,6 @@ $$
 
 stand_jointdf = joint_data_mean %>% scale()
 ```
-
-
-
 
 ## Performing K-Means Clustering on the Standardized Dataset
 
@@ -598,7 +592,18 @@ joint_data_cluster %>% ggplot(aes(Cluster, pts)) + geom_bar(stat = "identity", f
 
 Based on this descriptive cluster analysis, it would seem that countries in the second cluster (Croatia and Italy) are more likely to score the highest number of points, and thus, place higher
 
+## Conclusion
+
+We successfully merged and analyzed European survey data with Eurovision contest outcomes, offering a interesting perspective on how cultural and social values may influence or reflect in a popular international event. The use of k-means clustering provided valuable insights, segmenting countries into distinct groups based on their sociocultural attributes and Eurovision contest performances.
+
+The analysis highlighted intriguing trends, such as the unique position of countries like Croatia and Italy in securing higher points in Eurovision, possibly linked to their distinct cultural values.
+
+## Future Directions
+
+This project lays the groundwork for several interesting avenues of research. One potential area is the exploration of longitudinal changes in cultural values and their impact on Eurovision outcomes over a more extended period. Additionally, integrating individual-level survey responses or detailed Eurovision audience voting patterns, could offer deeper insights.
+
+Another interesting direction could be the application of more sophisticated machine learning techniques, like hierarchical clustering or neural networks, to better capture the nuances of cultural influence.
+
 ### Resources
 
 <https://uc-r.github.io/kmeans_clustering#>:\~:text=clustering%20algorithms%20%26%20visualization-,Data%20Preparation,scaled)%20to%20make%20variables%20comparable.
-
