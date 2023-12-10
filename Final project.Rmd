@@ -1,5 +1,5 @@
 ---
-title: "Data 607 Final Project"
+title: "Data 607 Final Project Team Android"
 author: "Matthew Roland, Jean Jimenez, Kelly Eng"
 date: "2023-12-04"
 output: pdf_document
@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(rio)
 library(tidyverse)
 library(mongolite)
-library(googlesheets4)
+#library(googlesheets4)
 library(flextable)
 library(cluster)
 library(factoextra)
@@ -20,7 +20,7 @@ library(ggplot2)
 
 ```
 
-# Clustering of
+# Clustering of European Country Data
 
 ## Introduction
 
@@ -50,9 +50,9 @@ data <- collection$find(query = '{}', fields = projection)
 
 ### Importing Eurovision Dataset
 
-We imported the eurovision datasets two ways. Originally, the data was intended to be imported from a Google Sheet using the `read_sheet` function. This approach would have allowed for a direct import of data from a Google Sheet specified by its ID, likely making use of a package like `googlesheets4` in R, which facilitates such operations. The specific sheet titled "All Songs Ever" from the Eurovision dataset was targeted.
+We imported the eurovision datasets two ways. Originally, the data was intended to be imported from a Google Sheet using the `read_sheet` function. This approach would have allowed for a direct import of data from a Google Sheet specified by its ID, making use of a package called `googlesheets4`. The specific sheet titled "All Songs Ever" from the Eurovision dataset was targeted.
 
-However, due to difficulties in accessing the Google Sheet among the group group, an alternative method was adopted. The data was instead placed on GitHub.
+However, due to difficulties in accessing the Google Sheet among the group an alternative method was adopted. The data was instead placed on GitHub.
 
 ```{r}
 
@@ -198,13 +198,13 @@ ews |>
 
 ### Eurovision Data
 
-I created `most_gsb`, which targets countries that have won the top three places (first, second, or third) in each year of the contest. This is done through grouping the data by year, filtering to include only the top three places, and then re-grouping by country to count the total number of top-three finishes for each country.
+I created `most_gsb`, which targets countries that have won the top three places (first, second, or third) in each year of the contest. This is done by grouping the data by year, filtering to include only the top three places, and then re-grouping by country to count the total number of top-three finishes for each country.
 
 After this grouping and filtering, the data is summarized to count the number of times each country has appeared in the top three places during the specified years. This summary is then arranged in descending order to highlight the countries with the most medals.
 
 The next step involves creating a table visualization using the `flextable` package. The `flextable` function transforms the `most_gsb` data into a more visually appealing and understandable table format. The column names are made more descriptive: 'country' is relabeled as 'Nation' and 'count' as 'Number of Eurovision Medals'. This makes the table easier to interpret for readers.
 
-Furthermore, an additional header row is added to the table to provide a clear title: "Table of Eurovision Medals by Country 2017-2022". This title contextualizes the table, indicating its content and the timeframe it covers.
+Furthermore, an additional header row is added to the table to provide a clear title: "Table of Eurovision Medals by Country 2017-2022".
 
 `ft_gsb2`, is a well-structured and informative table that visually represents the countries with the most top-three finishes in the Eurovision song contest over the specified years. This visualization is a useful tool for quickly understanding which countries have been most successful in recent Eurovisions, highlighting patterns and trends in the contest's outcomes.
 
@@ -433,6 +433,16 @@ joint_data_mean <- joint_data_mean %>% column_to_rownames(var = "country")
 
 ## Exploratory Data Analysis
 
+First, we define a function `summary_stats`. This function computes various summary statistics for a given numeric vector, including sample size, mean, standard deviation, variance, minimum and maximum values, and the interquartile range.
+
+The function is then applied to several variables (`Friends`, `Leisure`, `Work`, and `Religion`) from the `joint_data` dataset. For each variable, the data is grouped by country, and the `summary_stats` function is applied to calculate the summary statistics. The results for each variable are stored in separate data frames (`friends_res`, `leisure_res`, `work_res`, `religion_res`) and are printed out for review.
+
+Afterwards, we visualize dependent variables like points (`pts`) and placement (`place`) in the Eurovision contest by country. The first plot shows points by country, the second shows placement in the Eurovision by country, and the third plot compares points and placement, using a scatter plot to visualize the relationship between these variables across different countries.
+
+Afterwards, we conduct a correlation analysis. It calculates a correlation matrix (`cor_matrix`) for numeric columns in the `joint_data` dataset. Although there is a commented-out code for visualizing the correlation matrix using `corrplot`, the analysis proceeds to identify the top 10 most strongly correlated pairs of variables, excluding self-correlations. This analysis reveals significant correlations, like a perfect correlation between 'Denomination' and 'Religious_Service_Attendance' and a strong correlation between 'Belive_in_Hell' and 'Believe_in_Heaven'.
+
+Lastly, the code conducts a principal component analysis (PCA) on the correlation matrix. PCA is a technique used to reduce the dimensionality of the data while retaining as much variability as possible. The PCA results (`pca_result`) are summarized, and the transformed scores for the first 35 components are printed.
+
 ```{r}
 # Custom function to get summary statistics
 summary_stats <- function(x) {
@@ -528,7 +538,9 @@ top_correlated_pairs <- data.frame(
 print(top_correlated_pairs)
 ```
 
-### Standardization
+## Performing K-Means Clustering on the Standardized Dataset
+
+**Standardization:**
 
 Doing
 
@@ -543,7 +555,13 @@ $$
 stand_jointdf = joint_data_mean %>% scale()
 ```
 
-## Performing K-Means Clustering on the Standardized Dataset
+First, we remove the 'country' column from the `stand_jointdf` dataset to create a modified version (`stand_jointdf_mod`).
+
+K-means clustering is performed on `stand_jointdf` with two centers (or clusters) specified, and the process is repeated 25 times (`nstart = 25`) to ensure stable results. `k_means_results` is displayed using the `str` function, and key information like the centroids of the clusters (`centers`) and the size of each cluster (`size`) are printed.
+
+Next, we want to figure out the optimal number of clusters (k value) for the dataset. We made a function, `wss`, to calculate the total within-cluster sum of squares (WSS) for different values of k. The WSS is a measure of the compactness of the clusters and is used to assess the quality of clustering. Lower WSS values generally indicate better clustering. The function is applied to a range of k values from 1 to 10, and the resulting WSS values are plotted against the number of clusters. This plot helps in identifying the "elbow point," which indicates the optimal k value. Based on the bend in the graph, 4 might be a more optimal choice for the number of clusters.
+
+Then, k-means clustering is performed again on the `stand_jointdf` dataset, this time with 4 clusters. The final clustering result (`final`) is printed and visualized using `fviz_cluster`.
 
 ```{r}
 
@@ -603,6 +621,8 @@ The analysis highlighted intriguing trends, such as the unique position of count
 This project lays the groundwork for several interesting avenues of research. One potential area is the exploration of longitudinal changes in cultural values and their impact on Eurovision outcomes over a more extended period. Additionally, integrating individual-level survey responses or detailed Eurovision audience voting patterns, could offer deeper insights.
 
 Another interesting direction could be the application of more sophisticated machine learning techniques, like hierarchical clustering or neural networks, to better capture the nuances of cultural influence.
+
+Another thing we could have done was conduct multiple K-means test after performing PCA dimension reduction and comparing the results.
 
 ### Resources
 
