@@ -12,14 +12,23 @@ library(tidyverse)
 library(mongolite)
 library(googlesheets4)
 library(flextable)
+library(cluster)
+library(factoextra)
 library(corrplot)
 library(stats)
 library(ggplot2)
+
 ```
 
 # Clustering of
 
 ## Importing the Data
+
+We stored the European survey data on MongoDB because it was too large. A MongoDB database was constructed and data was imported to it. Afterwards, a connection was established to a MongoDB server, specifying the database and collection to be accessed.
+
+We defined a specific set of columns to be retrieved. This was done by creating a vector of column names, which are fields within the MongoDB collection. These fields represent different attributes or questions from the survey data.
+
+After defining the columns, a MongoDB projection query is constructed. This projection is a way to specify which fields in the documents should be included in the returned data. In this case, the query is set up to retrieve only the specific columns.
 
 ```{r}
 connection_string <- "mongodb+srv://teamandroid:O9sWUq5h7JMDioFk@cluster0.kk0rkpj.mongodb.net/"
@@ -37,19 +46,32 @@ data <- collection$find(query = '{}', fields = projection)
 
 ### Importing Eurovision Dataset
 
+We imported the eurovision datasets two ways. Originally, the data was intended to be imported from a Google Sheet using the `read_sheet` function. This approach would have allowed for a direct import of data from a Google Sheet specified by its ID, likely making use of a package like `googlesheets4` in R, which facilitates such operations. The specific sheet titled "All Songs Ever" from the Eurovision dataset was targeted.
+
+
+However, due to difficulties in accessing the Google Sheet among the group group, an alternative method was adopted. The data was instead placed on GitHub.
+
 ```{r}
+
 
 ##Google Drive Attmept
 #eurovision_id="1jRFrSEQaLmYSFLujaaEMEE33rNUo0UMOlLGXngqaYLQ"
 #eurovis_raw=read_sheet(eurovision_id, sheet="All Songs Ever")
 
 
+
 eurogit <- "https://raw.githubusercontent.com/Mattr5541/DATA_607_Final_Project/main/Copy_of_Every_Eurovision_Result_Ever%20-%20All%20Songs%20Ever.csv"
 eurovis_raw <- import(eurogit)
 
+eurogit <- "https://raw.githubusercontent.com/Mattr5541/DATA_607_Final_Project/main/Copy_of_Every_Eurovision_Result_Ever%20-%20All%20Songs%20Ever.csv"
+eurovis_raw <- import(eurogit)
 ```
 
 ## Preprocessing the Data
+
+From the European survey data, we selected many variables. These variables cover a wide range of topics, such as country abbreviations, various life values (like family, friends, work, religion), happiness and life satisfaction, religious and political affiliations, trust levels in different entities, demographic information, and socio-economic indicators.
+
+Afterwards we filtered the data and applied regional classification. The classification divides the countries into regions like Western Europe and Southern Europe. We also dropped NA values.
 
 ```{r}
 #Selecting our variables of interest (go over this in case you want to add more variables or remove any more); also, I may try to integrate these changes into MongoDb, but that remains to be seen
@@ -74,6 +96,10 @@ ews <- drop_na(ews)
 ```
 
 ### Preprocessing Eurovision Data
+
+From the eurovision data set, I created `semiclean_eurovis`. This subset focuses on specific columns: Country, Year, Language, Grand Final Points, and Grand Final Place. I filtered the data to include only the years from 2017 to 2022, focusing on Eurovision contests that correspond to the survey years.
+
+I then process the different languages the songs are in to extract first language. I then classify them by language type.
 
 ```{r}
 #names(eurovis_raw)
@@ -169,6 +195,16 @@ ews |>
 
 ### Eurovision Data
 
+I created `most_gsb`, which targets countries that have won the top three places (first, second, or third) in each year of the contest. This is done through grouping the data by year, filtering to include only the top three places, and then re-grouping by country to count the total number of top-three finishes for each country.
+
+After this grouping and filtering, the data is summarized to count the number of times each country has appeared in the top three places during the specified years. This summary is then arranged in descending order to highlight the countries with the most medals.
+
+The next step involves creating a table visualization using the `flextable` package. The `flextable` function transforms the `most_gsb` data into a more visually appealing and understandable table format. The column names are made more descriptive: 'country' is relabeled as 'Nation' and 'count' as 'Number of Eurovision Medals'. This makes the table easier to interpret for readers.
+
+Furthermore, an additional header row is added to the table to provide a clear title: "Table of Eurovision Medals by Country 2017-2022". This title contextualizes the table, indicating its content and the timeframe it covers.
+
+`ft_gsb2`, is a well-structured and informative table that visually represents the countries with the most top-three finishes in the Eurovision song contest over the specified years. This visualization is a useful tool for quickly understanding which countries have been most successful in recent Eurovisions, highlighting patterns and trends in the contest's outcomes.
+
 ```{r}
 #Visualizing Countries with most Gold, Silver, and bronze medals
 
@@ -189,6 +225,12 @@ ft_gsb2 = ft_gsb1 |>
 ft_gsb2
   
 ```
+
+After extracting the primary language, the data is regrouped by this first language and summarized to count the number of songs performed in each language. This summarization helps us see the frequency of each language's use in the contest. The results are arranged in descending order to highlight the most common languages.
+
+The `flextable` package is again used to create a visually appealing table, `langs`, representing this language distribution data. The table's headers are renamed for clarity, and an explanatory header row is added, providing context to the table.
+
+In addition to the table, a histogram is created using the `ggplot2`. This histogram, `eurolang_hist`, visualizes the same language distribution data.
 
 ```{r}
 #Visualizing Language Distributions
@@ -219,6 +261,10 @@ eurolang_hist=ggplot(eurovis_langs, aes(x = first_lang, y = count)) +
 eurolang_hist
 
 ```
+
+This step calculates the total points each language has garnered in top positions across the specified years.
+
+The results are then visualized in two ways. First, a table named `lang_pt_tbl` is created using the `flextable` package. Second, a histogram is generated using the `ggplot2` package.
 
 ```{r}
 #Determining Winning Languages pts
@@ -251,6 +297,8 @@ lang_pts_hist
 
 ```
 
+The dataset is grouped by both year and the first language, to observe the distribution of languages across different years. A summary is created for each language and year, counting the number of times each language appeared in the top three positions.
+
 ```{r}
 #Visualizing time distribution of Languages
 lang_time=semiclean_eurovis %>%
@@ -272,6 +320,10 @@ lang_time_tbl=flextable(lang_time)|>
 lang_time_tbl
 
 ```
+
+The data is grouped by country. For each country, the total points ( 'pts') accumulated over the specified years are aggregated. This is done using the `sum` function, with the `na.rm = TRUE` parameter to ensure that missing values do not affect the calculation. T
+
+To visualize this data, two methods are used: a table and a histogram.
 
 ```{r}
 #Visualizing Point Distributions by Country
@@ -300,6 +352,10 @@ europts_hist
 
 ### Creating a Modified Data set Representing Mean Values by Country
 
+We use `mutate` to rename a series of survey question codes (like A001, A002, etc.) to more descriptive variable names. This renaming makes the dataset more interpretable and user-friendly. For instance, 'A001' is renamed to 'Family', 'A002' to 'Friends', and so on, covering a wide range of topics like leisure, politics, work, religion, happiness, life satisfaction, and various other aspects related to personal beliefs, social trust, and environmental attitudes.
+
+After these transformations, the `select` function is applied. This function is used to pick out only the relevant variables from the dataset.
+
 ```{r}
 #ews_group <- ews %>% group_by(year,cntry_AN ) %>% summarize(Family = mean(A001#), Friends = mean(A002), Leisure = mean(A003), Politics = mean(A004), Work = #mean(A005), Religion = mean(A006), Happiness = mean(A008), Satisfaction = #mean#(A170), Religious_Children = mean(A040), Organized_Religion = mean(A065), #Cultural_Activities = mean(A066), Political_Party_Affiliation = mean(A068), #Trust_People = mean(A165), Protect_Environment_vs_Economy = mean(B008), #Trust_Family = mean(D001_B), Trust_Religion = mean(G007_35_B), Materialism = #mean(Y002), Future_Change_Less_Work = mean(E015), Income_Inequality = mean#(E035), Business_Ownership = mean(E036), Competition = mean(E039), #Confidence_Church = mean(E069_01), Democracy_Religion = mean(E225), #Deonomnation = mean(F025), Religious_Service_Attendance = mean(F025), Pray = #mean(F028B_WVS7), Pray_Outside_Service = mean(F066_EVS5), Religious = mean#(F034), Belivie_in_God = mean(F050), Belive_in_Afterlife = mean(F051), #Belive_in_Hell = mean(F053), Believe_in_Heaven = mean(F054), #Job_Priority_to_Immigrants = mean(C002), Impact_of_Immigration = mean(G052))
 
@@ -312,6 +368,10 @@ ews_group <- ews  %>% mutate(Family =A001, Friends = A002, Leisure = A003, Polit
 ```
 
 ### Adding Country Code to Eurovision Dataset
+
+Here, I merge two datasets, one containing Eurovision data and another with country codes.
+
+The purpose of this operation is to combine the Eurovision data with a standardized set of country codes, which is necessary to link it with our other data.
 
 ```{r}
 
@@ -334,12 +394,12 @@ eurovis_w_cc=clean_eurovis %>%
 
 
 # Checking column names and types in ews_group
-print(names(ews_group))
-str(ews_group)
+#print(names(ews_group))
+#str(ews_group)
 
 # Checking column names and types in eurovis_w_cc
-print(names(eurovis_w_cc))
-str(eurovis_w_cc)
+#print(names(eurovis_w_cc))
+#str(eurovis_w_cc)
 
 ews_group$year = as.integer(ews_group$year)
 eurovis_w_cc$year = as.integer(eurovis_w_cc$year)
@@ -360,22 +420,16 @@ joint_data=joint_data%>%
   ungroup()%>%
   filter(complete.cases(.)) %>%
   select(-cntry_AN)
+
+#Alright, so character variables do not work with k-means clustering, so I have two options: 1) exclude country from the analysis entirely; 2) find the means for each country so that way, each instance of country is unique and can be used as an identifier (I think year will need to be excluded entirely)
+
+joint_data_mean <- joint_data %>% group_by(country) %>% summarize(Family = mean(Family), Friends = mean(Friends), Leisure = mean(Leisure), Politics = mean(Politics), Work = mean(Work), Religion = mean(Religion), Happiness = mean(Happiness), Satisfaction = mean(Satisfaction), Religious_Children = mean(Religious_Children), Organized_Religion = mean(Organized_Religion), Cultural_Activities = mean(Cultural_Activities), Political_Party_Affiliation = mean(Political_Party_Affiliation), Trust_People = mean(Trust_People), Protect_Environment_vs_Economy = mean(Protect_Environment_vs_Economy), Trust_Family = mean(Trust_Family), Trust_Religion = mean(Trust_Religion), Materialism = mean(Materialism), Future_Change_Less_Work = mean(Future_Change_Less_Work), Income_Inequality = mean(Income_Inequality), Business_Ownership = mean(Business_Ownership), Competition = mean(Competition), Confidence_Church = mean(Confidence_Church), Democracy_Religion = mean(Democracy_Religion), Deonomnation = mean(Deonomnation), Religious_Service_Attendance = mean(Religious_Service_Attendance), Pray = mean(Pray), Pray_Outside_Service = mean(Pray_Outside_Service), Religious = mean(Religious), Belivie_in_God = mean(Belivie_in_God), Belive_in_Afterlife = mean(Belive_in_Afterlife), Belive_in_Hell = mean(Belive_in_Hell), Believe_in_Heaven = mean(Believe_in_Heaven), Job_Priority_to_Immigrants = mean(Job_Priority_to_Immigrants), Impact_of_Immigration = mean(Impact_of_Immigration), language_category = mean(language_category), pts = mean(pts), place = mean(place))
+
+joint_data_mean <- joint_data_mean %>% column_to_rownames(var = "country")
 ```
 
-### Standardization
 
-Doing
-
-$$
-X_{\text{standardized}} = \frac{X - \mu}{\sigma}
-$$
-
-```{r}
-stand_jointdf = joint_data %>%
-  mutate(across(-c(year, country), ~ (scale(.))))
-```
-
-### Exploratory Data Analysis
+## Exploratory Data Analysis
 
 ```{r}
 # Custom function to get summary statistics
@@ -471,3 +525,80 @@ top_correlated_pairs <- data.frame(
 
 print(top_correlated_pairs)
 ```
+
+
+
+
+
+
+### Standardization
+
+Doing
+
+$$
+X_{\text{standardized}} = \frac{X - \mu}{\sigma}
+$$
+
+```{r}
+#stand_jointdf = joint_data %>%
+  #mutate(across(-c(year, country), ~ (scale(.))))
+
+stand_jointdf = joint_data_mean %>% scale()
+```
+
+
+
+
+## Performing K-Means Clustering on the Standardized Dataset
+
+```{r}
+
+#stand_jointdf_mod <- stand_jointdf %>% select(-c(country))
+
+#stand_jointdf_mod <- stand_jointdf
+  
+k_means_results <- kmeans(stand_jointdf, centers = 2, nstart = 25)
+str(k_means_results)
+print(k_means_results$centers)  # Cluster centroids
+print(k_means_results$size)     # Size of each cluster
+
+#Now I will use a function to calculate the optimal k value for this analysis
+set.seed(123)
+wss <- function(k) {
+  kmeans(stand_jointdf, k, nstart = 25)$tot.withinss
+}
+
+k_values <- 1:10
+
+wss_values <- map_dbl(k_values, wss)
+
+plot(k_values, wss_values,
+       type="b", pch = 19, frame = FALSE, 
+       xlab="Number of clusters K",
+       ylab="Total within-clusters sum of squares")
+
+## Based on the "bend" in the graph, 4 may be a more optimal choice for our k
+
+final <- kmeans(stand_jointdf, centers = 4, nstart = 25)
+print(final)
+
+fviz_cluster(final, data = stand_jointdf)
+```
+
+With that, we are left with four clusters, wherein cluster 1 contains observations for Albania; cluster 2 contains observations for Croatia and Italy; cluster 3 contains observations for Serbia, Cyprus, and Greece; Cluster 4 contains observations for Austria, Germany, the Netherlands, Spain, France, and the United Kingdom
+
+```{r}
+joint_data_cluster <- joint_data_mean %>% mutate(Cluster = final$cluster) %>% group_by(Cluster) %>% summarize(pts = mean(pts), place = mean(place))
+
+flextable(joint_data_cluster)
+
+joint_data_cluster %>% ggplot(aes(Cluster, pts)) + geom_bar(stat = "identity", fill = "blue") + ggtitle("Mean Points Earned by Cluster") + ylab("Points")
+
+```
+
+Based on this descriptive cluster analysis, it would seem that countries in the second cluster (Croatia and Italy) are more likely to score the highest number of points, and thus, place higher
+
+### Resources
+
+<https://uc-r.github.io/kmeans_clustering#>:\~:text=clustering%20algorithms%20%26%20visualization-,Data%20Preparation,scaled)%20to%20make%20variables%20comparable.
+
