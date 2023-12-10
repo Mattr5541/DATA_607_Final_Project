@@ -19,6 +19,7 @@ EVS/WVS (2022). European Values Study and World Values Survey: Joint EVS/WVS 201
 
 
 [Joint EVS/WVS 2017-2022 Dataset (Joint EVS/WVS)](https://search.gesis.org/research_data/ZA7505)
+
 [DATA AND DOCUMENTATION – JOINT EVS/WVS](https://europeanvaluesstudy.eu/methodology-data-documentation/survey-2017/joint-evs-wvs/data-and-documentation-joint-evs-wvs/)
 
 
