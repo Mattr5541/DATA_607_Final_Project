@@ -10,3 +10,6 @@ https://europeanvaluesstudy.eu/methodology-data-documentation/survey-2017/joint-
 
 
 [Eurovision Dataset](https://docs.google.com/spreadsheets/d/1UUXinsHP4iDUwprM_KKEng4DBK2uC7Y1NdbnD1lmkSU/edit#gid=0)
+
+
+[Project Outline](https://docs.google.com/document/d/1e2IMS6lJmTy89vMRV8iRz0rXo1NDuCowcggHIxB8iQQ/edit?usp=sharing)
