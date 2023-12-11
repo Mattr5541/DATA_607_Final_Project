@@ -2,7 +2,10 @@
 title: "Data 607 Final Project Team Android"
 author: "Matthew Roland, Jean Jimenez, Kelly Eng"
 date: "2023-12-04"
-output: pdf_document
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -568,7 +571,7 @@ Then, k-means clustering is performed again on the `stand_jointdf` dataset, this
 #stand_jointdf_mod <- stand_jointdf %>% select(-c(country))
 
 #stand_jointdf_mod <- stand_jointdf
-  
+set.seed(123)
 k_means_results <- kmeans(stand_jointdf, centers = 2, nstart = 25)
 str(k_means_results)
 print(k_means_results$centers)  # Cluster centroids
@@ -597,7 +600,7 @@ print(final)
 fviz_cluster(final, data = stand_jointdf)
 ```
 
-With that, we are left with four clusters, wherein cluster 1 contains observations for Albania; cluster 2 contains observations for Croatia and Italy; cluster 3 contains observations for Serbia, Cyprus, and Greece; Cluster 4 contains observations for Austria, Germany, the Netherlands, Spain, France, and the United Kingdom
+With that, we are left with four clusters, wherein cluster 1 contains observations for Albania; Cluster 2 contains observations for Austria, Germany, the Netherlands, Spain, France, and the United Kingdom; cluster 3 contains observations for Croatia and Italy; cluster 4 contains observations for Serbia, Cyprus, and Greece
 
 ```{r}
 joint_data_cluster <- joint_data_mean %>% mutate(Cluster = final$cluster) %>% group_by(Cluster) %>% summarize(pts = mean(pts), place = mean(place))
@@ -608,7 +611,7 @@ joint_data_cluster %>% ggplot(aes(Cluster, pts)) + geom_bar(stat = "identity", f
 
 ```
 
-Based on this descriptive cluster analysis, it would seem that countries in the second cluster (Croatia and Italy) are more likely to score the highest number of points, and thus, place higher
+Based on this descriptive cluster analysis, it would seem that countries in the third cluster (Croatia and Italy) are more likely to score the highest number of points, and thus, place higher
 
 ## Conclusion
 
